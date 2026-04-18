@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>qe-auto — Utilities &amp; workflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0a0e17;
+      --accent: #22d3ee;
+      --accent2: #a78bfa;
+      --text: #e8eef8;
+      --muted: #8b9cb3;
+      --card: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg0);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 120% 80% at 50% -20%, #1e293b 0%, transparent 55%),
+        radial-gradient(ellipse 80% 50% at 100% 40%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 0% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 45%);
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    header.site {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.site h1 {
+      font-size: clamp(1.5rem, 4vw, 2.1rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+    header.site p { color: var(--muted); font-size: 0.95rem; }
+    header.site a { color: var(--accent); }
+    nav.toc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    nav.toc strong { color: var(--accent2); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 0.65rem; }
+    nav.toc ol { margin-left: 1.1rem; }
+    nav.toc li { margin: 0.25rem 0; font-size: 0.9rem; }
+    nav.toc a { color: var(--text); text-decoration: none; }
+    nav.toc a:hover { color: var(--accent); }
+    section {
+      margin-bottom: 2.75rem;
+      padding: 1.75rem 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+    }
+    section h2 {
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+    section h3 { font-size: 1rem; color: var(--accent2); margin: 1.25rem 0 0.65rem; font-weight: 600; }
+    p { margin: 0.65rem 0; font-size: 0.95rem; }
+    p.lead { color: var(--muted); font-size: 0.98rem; }
+    ul, ol { margin: 0.65rem 0 0.65rem 1.25rem; font-size: 0.92rem; }
+    li { margin: 0.35rem 0; }
+    code { font-family: "JetBrains Mono", monospace; font-size: 0.82em; color: #a5f3fc; background: rgba(0,0,0,0.35); padding: 0.12em 0.35em; border-radius: 4px; }
+    pre {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      color: #a5f3fc;
+      line-height: 1.5;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin: 0.85rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: rgba(34, 211, 238, 0.1); color: var(--accent); font-weight: 600; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .diagram {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: rgba(0,0,0,0.25);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .diagram .mermaid { display: block; text-align: center; }
+    .diagram svg { max-width: 100%; height: auto; }
+    .callout {
+      border-left: 3px solid var(--accent2);
+      padding: 0.65rem 0 0.65rem 1rem;
+      margin-top: 0.85rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .checklist li { list-style: none; margin-left: -0.5rem; }
+    .checklist li::before { content: "☐ "; color: var(--accent); }
+    footer.page {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    footer.page a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site">
+      <h1>Framework utilities — commands &amp; workflow</h1>
+      <p>HTML companion to <a href="../UTILITIES_COMMANDS_AND_WORKFLOW.md">docs/UTILITIES_COMMANDS_AND_WORKFLOW.md</a> · Run all commands from <code>framework/</code></p>
+    </header>
+
+    <nav class="toc" aria-label="Table of contents">
+      <strong>On this page</strong>
+      <ol>
+        <li><a href="#s1">End-to-end flow &amp; diagrams</a></li>
+        <li><a href="#s2"><code>user_story_to_manual</code></a></li>
+        <li><a href="#s3"><code>manual_tc_to_bdd</code></a></li>
+        <li><a href="#s4"><code>bdd_dom_materialize</code></a></li>
+        <li><a href="#s5"><code>api_bdd_materialize</code></a></li>
+        <li><a href="#s6">Run tests &amp; env</a></li>
+        <li><a href="#s7">Allure export</a></li>
+        <li><a href="#s8">Checklist</a></li>
+      </ol>
+    </nav>
+
+    <section id="s1">
+      <h2>1 · End-to-end flow (recommended)</h2>
+      <p class="lead">From <strong>user story</strong> → <strong>manual testcase</strong> → <strong>BDD artifacts</strong> → <strong>DOM or API materialization</strong> → <strong>pytest / runner</strong>.</p>
+      <table>
+        <tr><th>Step</th><th>What happens</th><th>Utility module</th></tr>
+        <tr><td>1</td><td>User story markdown → manual testcase markdown</td><td><code>common.utils.user_story_to_manual</code></td></tr>
+        <tr><td>2</td><td>Manual markdown → Gherkin, page object, <code>test_&lt;stem&gt;_steps.py</code></td><td><code>common.utils.manual_tc_to_bdd</code></td></tr>
+        <tr><td>3a</td><td>Web: scan DOM, <code>*_dom_materialized.json</code>, patch steps</td><td><code>common.utils.bdd_dom_materialize</code></td></tr>
+        <tr><td>3b</td><td>API: <code>*_api_materialized.json</code>, patch API runner</td><td><code>common.utils.api_bdd_materialize</code></td></tr>
+        <tr><td>4</td><td>Execute tests, tune locators, optional runtime self-heal</td><td><code>pytest</code> / <code>runner.py</code></td></tr>
+      </table>
+
+      <h3>Flowchart — documentation pipeline</h3>
+      <div class="diagram"><div class="mermaid">
+flowchart LR
+subgraph inputs
+US[User story .md]
+MT[Manual testcase .md]
+end
+US -->|user_story_to_manual| MT
+MT -->|manual_tc_to_bdd| ART[Feature + page object + test_*_steps.py]
+ART --> BRANCH{Channel / surface}
+BRANCH -->|Web or MobileBanking UI| DOM[bdd_dom_materialize]
+BRANCH -->|API| API[api_bdd_materialize]
+BRANCH -->|CrossChannel| MANUAL[Hand-edit + wire step_defs]
+DOM --> OUT1[dom JSON + patched steps]
+API --> OUT2[api JSON + patched steps]
+OUT1 --> RUN[pytest or runner.py]
+OUT2 --> RUN
+MANUAL --> RUN
+      </div></div>
+
+      <h3>Flowchart — detailed decision</h3>
+      <div class="diagram"><div class="mermaid">
+flowchart TD
+A[Start: new requirement] --> B[Write UserStories/en/story.md]
+B --> C[user_story_to_manual]
+C --> D[Review ManualTestCases/en]
+D --> E[manual_tc_to_bdd]
+E --> F{UI or API?}
+F -->|UI| G[bdd_dom_materialize]
+G --> H[Optional secondary-url headed min-score patch-only]
+F -->|API| K[api_bdd_materialize]
+K --> L[Optional config JSON]
+H --> M[pytest_plugins in conftest if new stem]
+G --> M
+K --> M
+L --> M
+M --> N[pytest or runner.py]
+N --> O{Pass?}
+O -->|No| P[Tweak locators or re-run DOM]
+O -->|Yes| Q[Done / CI]
+P --> N
+      </div></div>
+
+      <p><strong>cd framework</strong></p>
+      <pre>cd framework</pre>
+      <p>Windows PowerShell: same <code>cd framework</code> from repo root.</p>
+    </section>
+
+    <section id="s2">
+      <h2>2 · <code>user_story_to_manual</code></h2>
+      <p>Converts user story markdown → manual testcase markdown (default under <code>ManualTestCases/en/</code>).</p>
+      <pre>python -m common.utils.user_story_to_manual -i UserStories/en/your_story.md -o ManualTestCases/en/your_story_manual.md</pre>
+      <table>
+        <tr><th>Argument</th><th>Short</th><th>Required</th><th>Description</th></tr>
+        <tr><td><code>--input</code></td><td><code>-i</code></td><td>Yes</td><td>Path to user story <code>.md</code></td></tr>
+        <tr><td><code>--output</code></td><td><code>-o</code></td><td>No</td><td>Output path (default: <code>ManualTestCases/en/&lt;stem&gt;_manual.md</code>)</td></tr>
+        <tr><td><code>--app</code></td><td></td><td>No</td><td>Override “Application under test” one-liner</td></tr>
+        <tr><td><code>--framework-root</code></td><td></td><td>No</td><td>Framework root if not default</td></tr>
+      </table>
+      <p>Default: <code>UserStories/en/foo.md</code> → <code>ManualTestCases/en/foo_manual.md</code> when <code>-o</code> is omitted.</p>
+    </section>
+
+    <section id="s3">
+      <h2>3 · <code>manual_tc_to_bdd</code></h2>
+      <p>Produces <code>Features/nm/&lt;stem&gt;.feature</code>, <code>pageobject/nm/&lt;stem&gt;_page.py</code>, <code>stepdefination/nm/test_&lt;stem&gt;_steps.py</code>.</p>
+      <pre>python -m common.utils.manual_tc_to_bdd -i ManualTestCases/en/example_manual.md -c Netbanking -p nb_my_feature_stem --tag web</pre>
+      <table>
+        <tr><th>Argument</th><th>Short</th><th>Required</th><th>Description</th></tr>
+        <tr><td><code>--input</code></td><td><code>-i</code></td><td>Yes</td><td>Manual testcase markdown path</td></tr>
+        <tr><td><code>--channel</code></td><td><code>-c</code></td><td>No</td><td><code>Netbanking</code> (default), <code>MobileBanking</code>, <code>API</code>, <code>CrossChannel</code></td></tr>
+        <tr><td><code>--prefix</code></td><td><code>-p</code></td><td>Yes</td><td>Output file stem (e.g. <code>nb_homefinance_emicalc_manual</code>)</td></tr>
+        <tr><td><code>--tag</code></td><td></td><td>No</td><td>Gherkin tag(s); repeat for multiple. Default: <code>web</code></td></tr>
+        <tr><td><code>--framework-root</code></td><td></td><td>No</td><td>Path to <code>framework/</code></td></tr>
+      </table>
+      <h3>Examples</h3>
+      <pre># Netbanking web
+python -m common.utils.manual_tc_to_bdd -i ManualTestCases/en/nm_calculator.md -c Netbanking -p nb_homefinance_emicalc_manual --tag web
+
+# API channel → then api_bdd_materialize
+python -m common.utils.manual_tc_to_bdd -i ManualTestCases/en/api_leads.md -c API -p api_my_feature --tag api</pre>
+      <div class="callout">Ensure <code>stepdefination/conftest.py</code> lists <code>*_step_defs</code> in <code>pytest_plugins</code> when steps are split. For UI, follow with <code>bdd_dom_materialize</code>.</div>
+    </section>
+
+    <section id="s4">
+      <h2>4 · <code>bdd_dom_materialize</code></h2>
+      <p>Selenium DOM scan → <code>*_dom_materialized.json</code> → patches <code>test_*_steps.py</code> to call <code>bdd_step_runner.execute_materialized_step</code>.</p>
+      <pre>python -m common.utils.bdd_dom_materialize -c Netbanking -p nb_homefinance_emicalc_manual --base-url https://example.com/ --secondary-url https://example.com/sub-page</pre>
+      <table>
+        <tr><th>Argument</th><th>Short</th><th>Required</th><th>Description</th></tr>
+        <tr><td><code>--channel</code></td><td><code>-c</code></td><td>Yes</td><td>Netbanking, MobileBanking, API, CrossChannel</td></tr>
+        <tr><td><code>--stem</code></td><td><code>-p</code></td><td>Yes</td><td>Same stem as <code>manual_tc_to_bdd</code></td></tr>
+        <tr><td><code>--base-url</code></td><td></td><td>Yes</td><td>Primary URL for DOM scan</td></tr>
+        <tr><td><code>--secondary-url</code></td><td></td><td>No</td><td>Extra page URL</td></tr>
+        <tr><td><code>--browser</code></td><td></td><td>No</td><td>Default: chrome</td></tr>
+        <tr><td><code>--headed</code></td><td></td><td>Flag</td><td>Headed browser</td></tr>
+        <tr><td><code>--min-score</code></td><td></td><td>No</td><td>DOM match threshold 0–1 (default 0.22)</td></tr>
+        <tr><td><code>--patch-only</code></td><td></td><td>Flag</td><td>No browser; refresh JSON/patches only</td></tr>
+        <tr><td><code>--framework-root</code></td><td></td><td>No</td><td>Framework root</td></tr>
+      </table>
+      <p><strong>Iteration:</strong> full scan first → adjust <code>--min-score</code> or step wording → use <code>--patch-only</code> after editing JSON.</p>
+    </section>
+
+    <section id="s5">
+      <h2>5 · <code>api_bdd_materialize</code></h2>
+      <p>Writes <code>*_api_materialized.json</code> and patches steps for <code>api_bdd_step_runner.execute_api_materialized_step</code>.</p>
+      <pre>python -m common.utils.api_bdd_materialize -c API -p api_my_feature --api-base-url https://api.example.com
+
+python -m common.utils.api_bdd_materialize -c API -p api_my_feature --api-base-url https://api.example.com --config path/to/overrides.json</pre>
+      <table>
+        <tr><th>Argument</th><th>Short</th><th>Required</th><th>Description</th></tr>
+        <tr><td><code>--channel</code></td><td><code>-c</code></td><td>No</td><td>Default API; same choices as other tools</td></tr>
+        <tr><td><code>--stem</code></td><td><code>-p</code></td><td>Yes</td><td>e.g. api_my_feature</td></tr>
+        <tr><td><code>--api-base-url</code></td><td></td><td>Yes</td><td>API base URL</td></tr>
+        <tr><td><code>--config</code></td><td></td><td>No</td><td>Optional JSON merged into contract</td></tr>
+        <tr><td><code>--framework-root</code></td><td></td><td>No</td><td>Framework root</td></tr>
+      </table>
+      <p>Secrets at runtime: <code>API_TOKEN</code>, <code>API_KEY</code> — see <a href="../TECHNICAL.md">TECHNICAL.md</a> §5.3.</p>
+    </section>
+
+    <section id="s6">
+      <h2>6 · Run tests &amp; optional runtime self-heal</h2>
+      <h3>Unified runner</h3>
+      <pre>python runner.py --platform web --tests-path Netbanking/stepdefination/nm/test_nb_homefinance_emicalc_manual_steps.py
+python runner.py --platform api
+python runner.py --platform cross --tests-path CrossChannel/stepdefination/nm/test_CC_authentication_cross_login_steps.py</pre>
+      <h3>Pytest direct (real URLs)</h3>
+      <pre>python -m pytest Netbanking/stepdefination/nm/test_nb_homefinance_emicalc_manual_steps.py --platform web --base-url https://your-app/
+python -m pytest API/stepdefination/nm/test_api_my_feature_steps.py --platform api --api-base-url https://your-api/</pre>
+      <table>
+        <tr><th>Variable</th><th>Purpose</th></tr>
+        <tr><td><code>SELF_HEAL=1</code></td><td>Runtime DOM self-heal</td></tr>
+        <tr><td><code>HEADLESS=0</code></td><td>Headed debugging</td></tr>
+        <tr><td><code>ALLURE_RECORD_VIDEO=1</code></td><td>Playwright video under session <code>media/videos/</code></td></tr>
+      </table>
+      <p class="callout"><code>bdd_dom_materialize</code> is the main <strong>offline</strong> locator pipeline; <code>SELF_HEAL</code> complements for flaky UIs.</p>
+    </section>
+
+    <section id="s7">
+      <h2>7 · Allure export (optional)</h2>
+      <pre>python runner.py --build-allure --open-allure</pre>
+      <pre>python -c "from pathlib import Path; from common.reporting.allure_export import export_allure_artifacts; export_allure_artifacts(Path('common/reports'))"</pre>
+    </section>
+
+    <section id="s8">
+      <h2>8 · Quick checklist</h2>
+      <ul class="checklist">
+        <li><code>user_story_to_manual</code> → manual TC under <code>ManualTestCases/en/</code></li>
+        <li><code>manual_tc_to_bdd</code> → feature, page object, <code>test_*_steps.py</code>; stem consistent</li>
+        <li>Web: <code>bdd_dom_materialize</code> with <code>--base-url</code> / <code>--secondary-url</code></li>
+        <li>API: <code>api_bdd_materialize</code> with <code>--api-base-url</code> (+ <code>--config</code> if needed)</li>
+        <li><code>stepdefination/conftest.py</code> → <code>pytest_plugins</code> for <code>*_step_defs</code></li>
+        <li><code>pytest</code> or <code>runner.py</code> with correct <code>--platform</code> and URLs/secrets</li>
+      </ul>
+    </section>
+
+    <footer class="page">
+      <p>Full architecture: <a href="../TECHNICAL.md">docs/TECHNICAL.md</a> · Markdown source: <a href="../UTILITIES_COMMANDS_AND_WORKFLOW.md">docs/UTILITIES_COMMANDS_AND_WORKFLOW.md</a></p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" crossorigin="anonymous"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "dark",
+      securityLevel: "loose",
+      themeVariables: {
+        primaryColor: "#1e293b",
+        primaryTextColor: "#e8eef8",
+        primaryBorderColor: "#22d3ee",
+        lineColor: "#8b9cb3",
+        secondaryColor: "#121a2b",
+        tertiaryColor: "#0a0e17",
+        fontFamily: "DM Sans, system-ui, sans-serif"
+      }
+    });
+  </script>
+</body>
+</html>
