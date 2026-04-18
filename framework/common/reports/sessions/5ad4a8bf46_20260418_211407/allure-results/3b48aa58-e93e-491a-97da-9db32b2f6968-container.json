@@ -1,0 +1,1 @@
+{"uuid": "7bc29e36-5afc-48f3-927f-24ff41b036fb", "befores": [{"name": "pytestbdd_stepdef_when_Capture HTTP status, response body, and correlation/reference ids from logs (no secrets in plain text).", "status": "passed", "start": 1776527053245, "stop": 1776527053245}], "start": 1776527053245, "stop": 1776527053249}

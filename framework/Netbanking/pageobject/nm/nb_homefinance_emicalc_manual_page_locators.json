@@ -1,0 +1,10 @@
+{
+  "link_calculate_monthly_emi": [
+    "xpath",
+    "//h4[contains(normalize-space(.), 'Calculators')]"
+  ],
+  "heading_emi_calculator": [
+    "xpath",
+    "//h4[contains(normalize-space(.), 'Calculators')]"
+  ]
+}

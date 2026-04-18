@@ -1,0 +1,2 @@
+WARNING  framework.self_heal:locator_persistence.py:48 Self-heal persisted locator 'link_calculate_monthly_emi' → xpath / D:\qe-auto\framework\Netbanking\pageobject\nm\nb_homefinance_emicalc_manual_page_locators.json
+WARNING  framework.self_heal:locator_persistence.py:48 Self-heal persisted locator 'heading_emi_calculator' → xpath / D:\qe-auto\framework\Netbanking\pageobject\nm\nb_homefinance_emicalc_manual_page_locators.json

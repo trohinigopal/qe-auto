@@ -1,0 +1,53 @@
+{
+  "api_base_url": "https://httpbin.org",
+  "channel": "API",
+  "stem": "api_my_feature",
+  "default_headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${API_TOKEN}"
+  },
+  "endpoints": {
+    "lead_save": {
+      "method": "POST",
+      "path": "post",
+      "headers": {}
+    },
+    "lead_save_4xx": {
+      "method": "POST",
+      "path": "status/422",
+      "headers": {}
+    },
+    "lead_status": {
+      "method": "GET",
+      "path": "get",
+      "headers": {}
+    },
+    "health": {
+      "method": "GET",
+      "path": "get",
+      "headers": {}
+    }
+  },
+  "payloads": {
+    "valid_lead": {
+      "product": "HOME_LOAN",
+      "mobile": "9876543210",
+      "consent": true,
+      "source": "QE_AUTO"
+    },
+    "invalid_lead": {
+      "product": "HOME_LOAN"
+    },
+    "duplicate_lead": {
+      "product": "HOME_LOAN",
+      "mobile": "9876543210",
+      "consent": true,
+      "source": "QE_AUTO"
+    }
+  },
+  "query_params": {
+    "lead_status": {
+      "mobile": "9876543210"
+    }
+  }
+}

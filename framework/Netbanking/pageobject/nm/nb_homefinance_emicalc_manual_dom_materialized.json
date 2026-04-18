@@ -1,0 +1,7 @@
+{
+  "base_url": "https://example.com",
+  "secondary_url": "",
+  "channel": "Netbanking",
+  "stem": "nb_homefinance_emicalc_manual",
+  "steps": {}
+}

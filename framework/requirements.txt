@@ -1,0 +1,13 @@
+pytest
+pytest-bdd
+pytest-rerunfailures
+selenium
+playwright
+Appium-Python-Client
+requests
+allure-pytest
+pandas
+openpyxl
+fpdf2
+python-dotenv
+python-pptx

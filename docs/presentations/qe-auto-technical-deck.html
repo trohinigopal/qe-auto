@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>qe-auto — Technical Architecture (detailed)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0a0e17;
+      --bg1: #121a2b;
+      --accent: #22d3ee;
+      --accent2: #a78bfa;
+      --text: #e8eef8;
+      --muted: #8b9cb3;
+      --card: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.1);
+      --glow: 0 0 80px rgba(34, 211, 238, 0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: "DM Sans", system-ui, sans-serif; background: var(--bg0); color: var(--text); }
+    body {
+      background: radial-gradient(ellipse 120% 80% at 50% -20%, #1e293b 0%, transparent 55%),
+                  radial-gradient(ellipse 80% 50% at 100% 50%, rgba(167, 139, 250, 0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse 60% 40% at 0% 80%, rgba(34, 211, 238, 0.06) 0%, transparent 45%),
+                  var(--bg0);
+    }
+    #deck {
+      height: 100vh; display: flex; flex-direction: column; position: relative;
+    }
+    header.bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--border);
+      background: rgba(10, 14, 23, 0.85); backdrop-filter: blur(12px); z-index: 10;
+    }
+    .brand { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.06em; color: var(--accent); }
+    .progress-wrap { flex: 1; max-width: 420px; margin: 0 2rem; height: 4px; background: var(--card); border-radius: 4px; overflow: hidden; }
+    .progress { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); width: 0%; transition: width 0.35s ease; }
+    .counter { font-family: "JetBrains Mono", monospace; font-size: 0.8rem; color: var(--muted); }
+    main.viewport {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 2rem 4vw; position: relative;
+    }
+    .slide {
+      display: none; width: min(1100px, 100%); max-height: calc(100vh - 120px); overflow-y: auto;
+      animation: enter 0.5s ease;
+    }
+    .slide.active { display: block; }
+    @keyframes enter {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-inner {
+      background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+      padding: 2.5rem 3rem; box-shadow: var(--glow), 0 25px 50px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+    }
+    .slide-inner.compact h2 { font-size: 1.15rem; margin-bottom: 0.85rem; }
+    .slide-inner.compact .subtitle { font-size: 0.95rem; margin-bottom: 1rem; }
+    .slide-inner.compact p, .slide-inner.compact li { font-size: 0.88rem; line-height: 1.55; }
+    .slide-inner.compact table { font-size: 0.78rem; margin-top: 0.65rem; }
+    .slide-inner.compact th, .slide-inner.compact td { padding: 0.4rem 0.55rem; }
+    h1 { font-size: clamp(1.75rem, 4vw, 2.75rem); font-weight: 700; line-height: 1.15; margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    h2 { font-size: 1.35rem; color: var(--accent); margin-bottom: 1.25rem; font-weight: 600; }
+    h3 { font-size: 1rem; color: var(--accent2); margin: 1rem 0 0.5rem; font-weight: 600; }
+    .subtitle { color: var(--muted); font-size: 1.05rem; margin-bottom: 1.5rem; line-height: 1.5; }
+    p, li { font-size: 0.95rem; line-height: 1.65; color: var(--text); }
+    ul { margin: 0.75rem 0 0 1.25rem; }
+    ol.detailed { margin: 0.75rem 0 0 1.25rem; }
+    ol.detailed li { margin: 0.5rem 0; }
+    li { margin: 0.35rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 1rem; }
+    th, td { border: 1px solid var(--border); padding: 0.55rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: rgba(34, 211, 238, 0.08); color: var(--accent); font-weight: 600; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    pre, .code {
+      font-family: "JetBrains Mono", monospace; font-size: 0.75rem;
+      background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 10px;
+      padding: 1rem 1.25rem; overflow-x: auto; margin-top: 1rem; color: #a5f3fc;
+    }
+    .slide-inner.compact pre { font-size: 0.7rem; padding: 0.75rem 1rem; margin-top: 0.65rem; }
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 0.75rem; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+    .card-mini {
+      background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.15rem;
+    }
+    .card-mini strong { color: var(--accent2); display: block; margin-bottom: 0.35rem; font-size: 0.9rem; }
+    .tag { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.72rem;
+      background: rgba(34, 211, 238, 0.15); color: var(--accent); margin: 0.15rem 0.15rem 0 0; }
+    .callout {
+      border-left: 3px solid var(--accent2); padding: 0.65rem 0 0.65rem 1rem; margin-top: 0.85rem;
+      color: var(--muted); font-size: 0.88rem; line-height: 1.55;
+    }
+    footer.hint {
+      position: fixed; bottom: 0; left: 0; right: 0; padding: 0.6rem 1.5rem;
+      font-size: 0.75rem; color: var(--muted); text-align: center; border-top: 1px solid var(--border);
+      background: rgba(10, 14, 23, 0.9); backdrop-filter: blur(8px);
+    }
+    footer.hint kbd { background: var(--card); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid var(--border); font-family: "JetBrains Mono", monospace; font-size: 0.7rem; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+    .hero-badge span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent2); }
+    .doc-foot { margin-top: 1.5rem; font-size: 0.8rem; color: var(--muted); font-style: italic; }
+  </style>
+</head>
+<body>
+  <div id="deck">
+    <header class="bar">
+      <div class="brand">QE-AUTO</div>
+      <div class="progress-wrap"><div class="progress" id="progress"></div></div>
+      <div class="counter"><span id="cur">1</span> / <span id="total">—</span></div>
+    </header>
+    <main class="viewport" id="viewport"></main>
+    <footer class="hint">
+      <kbd>→</kbd> <kbd>Space</kbd> next · <kbd>←</kbd> prev · <kbd>Home</kbd> first · <kbd>End</kbd> last · <kbd>F</kbd> fullscreen · Source: docs/TECHNICAL.md
+    </footer>
+  </div>
+
+  <script>
+  const slides = [
+    { html: `
+      <div class="slide-inner">
+        <div class="hero-badge"><span>Detailed technical deck</span></div>
+        <h1>qe-auto<br/>Unified Test Automation</h1>
+        <p class="subtitle">Multi-channel BDD framework for banking-style apps: Netbanking · MobileBanking · API · CrossChannel. Gherkin + pytest-bdd, shared fixtures, Allure sessions, and materialization pipelines from user stories through DOM/API contracts.</p>
+        <div class="grid2">
+          <div class="card-mini"><strong>Execution</strong> pytest · pytest-bdd · Selenium / Playwright · Appium · requests (ApiBaseClient)</div>
+          <div class="card-mini"><strong>Working directory</strong> Almost all commands assume <code style="color:#a5f3fc">cd framework/</code></div>
+          <div class="card-mini"><strong>Artifacts</strong> common/reports/sessions/ · common/logs/ · Allure exports (HTML, xlsx, pdf)</div>
+        </div>
+        <p class="callout">This deck mirrors <strong>docs/TECHNICAL.md</strong> section-by-section. Use it for onboarding, audits, and stakeholder walkthroughs.</p>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§1 Purpose &amp; scope</h2>
+        <p class="subtitle">qe-auto hosts a <strong>multi-channel</strong> automation framework. Tests are <strong>Gherkin</strong> (.feature) bound with <strong>pytest-bdd</strong>. Shared fixtures <code>ui_driver</code>, <code>mobile_driver</code>, <code>api_client</code> live in <code>framework/conftest.py</code>.</p>
+        <table>
+          <tr><th>Channel</th><th>Technology</th><th>Typical use</th></tr>
+          <tr><td><span class="tag">Netbanking</span></td><td>Selenium or Playwright</td><td>Web UI (browser)</td></tr>
+          <tr><td><span class="tag">MobileBanking</span></td><td>Appium</td><td>Native / hybrid mobile</td></tr>
+          <tr><td><span class="tag">API</span></td><td>requests via ApiBaseClient</td><td>REST / HTTP APIs</td></tr>
+          <tr><td><span class="tag">CrossChannel</span></td><td>Selenium/Playwright + API client</td><td>End-to-end UI + API journeys</td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§2 Repository layout (repo root)</h2>
+        <p class="subtitle">Executable framework lives under <code>framework/</code> unless noted otherwise.</p>
+        <pre class="code">qe-auto/
+  README.md
+  docs/
+    TECHNICAL.md
+  framework/                 # Main automation root — cd here to run commands
+    runner.py                # CLI: pytest + quality / Allure / RTM
+    conftest.py                # Global fixtures, Allure session paths, hooks
+    pytest.ini                 # testpaths, markers
+    requirements.txt
+    Netbanking/  MobileBanking/  API/  CrossChannel/
+    UserStories/en/            ManualTestCases/en/
+    common/  (base, reporting, steps, utils, logs, reports/)</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§2 Per-channel layout</h2>
+        <pre class="code">framework/Netbanking/   (same idea for MobileBanking, API)
+  Features/nm/                    # Gherkin
+  pageobject/nm/                  # Page objects, *_dom_materialized.json, locators JSON
+  stepdefination/nm/              # test_*_steps.py + *_step_defs.py
+  stepdefination/conftest.py      # pytest_plugins → NB step_defs
+
+framework/API/
+  .../stepdefination/conftest.py    # pytest_plugins → API step_defs
+
+framework/CrossChannel/
+  pageobject/nm/                  # e.g. *_journey.py orchestration stubs
+  conftest.py                     # pytest_plugins → NB + API step_defs (reuse)</pre>
+        <p style="margin-top:0.75rem"><strong>Naming:</strong> same <strong>stem</strong> for <code>Features/nm/&lt;stem&gt;.feature</code>, <code>pageobject/nm/&lt;stem&gt;_page.py</code> (or <code>_client.py</code> / <code>_journey.py</code>), and <code>stepdefination/nm/test_&lt;stem&gt;_steps.py</code>.</p>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§3 Prerequisites — required</h2>
+        <table>
+          <tr><th>Prerequisite</th><th>Notes</th></tr>
+          <tr><td>Python 3.10+</td><td>3.12 used in development; venv recommended</td></tr>
+          <tr><td>pip</td><td><code>pip install -r framework/requirements.txt</code></td></tr>
+          <tr><td>Chrome (or Chromium)</td><td>Default Selenium; ChromeDriver or Selenium Manager (bundled in recent Selenium)</td></tr>
+          <tr><td>Git</td><td>Clone / CI</td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§3 Prerequisites — optional</h2>
+        <table>
+          <tr><th>Software</th><th>Purpose</th></tr>
+          <tr><td>Allure Commandline</td><td><code>allure generate</code> from allure-results (npm -g, scoop, etc.)</td></tr>
+          <tr><td>Node.js / npm</td><td>Installing Allure CLI globally</td></tr>
+          <tr><td>Firefox + geckodriver</td><td><code>--browser firefox</code></td></tr>
+          <tr><td>Playwright browsers</td><td>After pip: <code>playwright install</code></td></tr>
+          <tr><td>Appium + Android SDK / Xcode</td><td>Real mobile runs (MobileBanking)</td></tr>
+          <tr><td>JDK</td><td>Often required by Android / Appium tooling</td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§3 Python dependencies (requirements.txt)</h2>
+        <table>
+          <tr><th>Package</th><th>Role</th></tr>
+          <tr><td>pytest, pytest-bdd</td><td>Runner + Gherkin binding</td></tr>
+          <tr><td>pytest-rerunfailures</td><td>Retries (if used in suites)</td></tr>
+          <tr><td>selenium, playwright</td><td>Web automation</td></tr>
+          <tr><td>Appium-Python-Client</td><td>Mobile</td></tr>
+          <tr><td>requests</td><td>HTTP (ApiBaseClient)</td></tr>
+          <tr><td>allure-pytest</td><td>Allure integration</td></tr>
+          <tr><td>pandas, openpyxl, fpdf2</td><td>Allure export (Excel/PDF summaries)</td></tr>
+          <tr><td>python-dotenv</td><td>Optional env loading</td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner">
+        <h2>§4 Installation &amp; first run</h2>
+        <pre class="code">cd framework
+python -m venv venv
+# Windows: venv\\Scripts\\activate
+# Linux/macOS: source venv/bin/activate
+
+pip install -r requirements.txt
+# optional: playwright install
+
+python runner.py --help
+python -m pytest --collect-only -q</pre>
+        <p class="callout"><strong>Working directory:</strong> almost all commands assume <code>framework/</code> as cwd.</p>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§5.1 Pytest CLI options (conftest)</h2>
+        <table>
+          <tr><th>Option</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>--platform</code></td><td>inferred from markers or <code>web</code></td><td><code>web</code> | <code>mobile</code> | <code>api</code> | <code>cross</code> — which drivers are real vs lazy</td></tr>
+          <tr><td><code>--browser</code></td><td>chrome</td><td>Selenium browser name</td></tr>
+          <tr><td><code>--web-engine</code></td><td>selenium</td><td><code>selenium</code> | <code>playwright</code></td></tr>
+          <tr><td><code>--base-url</code></td><td>https://example-bank.test</td><td>Web SUT base URL</td></tr>
+          <tr><td><code>--api-base-url</code></td><td>https://example-bank-api.test</td><td>API base for ApiBaseClient</td></tr>
+        </table>
+        <p style="margin-top:0.75rem"><strong>Platform resolution:</strong> CLI <code>--platform</code> wins → item markers (<code>mobile</code>, <code>api</code>, <code>cross</code>) → else <strong>web</strong>.</p>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§5.2 Fixtures (conftest.py)</h2>
+        <table>
+          <tr><th>Fixture</th><th>Scope</th><th>Behavior</th></tr>
+          <tr><td><code>runtime_context</code></td><td>session</td><td>Bundles CLI options for tests/helpers</td></tr>
+          <tr><td><code>ui_driver</code></td><td>function</td><td><code>None</code> if platform not web/cross; else Playwright Page or Selenium WebDriver</td></tr>
+          <tr><td><code>mobile_driver</code></td><td>function</td><td>Active for mobile / cross</td></tr>
+          <tr><td><code>api_client</code></td><td>function</td><td>ApiBaseClient; lazy for non-API unless api/cross</td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§5.3 Environment variables</h2>
+        <table>
+          <tr><th>Variable</th><th>Effect</th></tr>
+          <tr><td><code>HEADLESS</code></td><td><code>1</code> headless (default); <code>0</code> headed</td></tr>
+          <tr><td><code>SELF_HEAL</code></td><td><code>1</code> enables DOM self-heal heuristics</td></tr>
+          <tr><td><code>API_TOKEN</code>, <code>API_KEY</code></td><td>Substituted into <code>*_api_materialized.json</code> header placeholders <code>\${...}</code></td></tr>
+          <tr><td><code>ALLURE_SESSION_ID</code></td><td>Prefix for Allure session folder name</td></tr>
+          <tr><td><code>ALLURE_SCREENSHOT_ALWAYS</code></td><td><code>1</code> — screenshot after every call-phase step (UI/mobile)</td></tr>
+          <tr><td><code>ALLURE_RECORD_VIDEO</code></td><td><code>1</code> — Playwright video under session <code>media/videos/</code></td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner">
+        <h2>§6.1 BDD execution (pytest-bdd)</h2>
+        <ol class="detailed">
+          <li><strong>Feature files</strong> (<code>Features/nm/*.feature</code>) hold Gherkin scenarios.</li>
+          <li><strong>Step definitions</strong> — Python with <code>@given</code> / <code>@when</code> / <code>@then</code> (often <code>parsers.parse("exact text")</code>).</li>
+          <li><strong>Scenario tests</strong> in <code>test_&lt;stem&gt;_steps.py</code> use <code>@scenario("path/to.feature", "Scenario Name")</code>.</li>
+        </ol>
+        <p class="callout">pytest collects fixtures from <code>conftest.py</code> and modules in <strong>pytest_plugins</strong>. Step code in <code>*_step_defs.py</code> must be listed there or you get <strong>StepDefinitionNotFoundError</strong>.</p>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>pytest_plugins (by channel)</h2>
+        <ul>
+          <li><code>Netbanking/stepdefination/conftest.py</code> → e.g. <code>nb_homefinance_emicalc_manual_step_defs</code></li>
+          <li><code>API/stepdefination/conftest.py</code> → e.g. <code>api_my_feature_step_defs</code></li>
+          <li><code>CrossChannel/conftest.py</code> → <strong>both</strong> NB and API <code>_step_defs</code> for cross scenarios</li>
+        </ul>
+        <pre class="code"># Netbanking/stepdefination/conftest.py
+pytest_plugins = ("Netbanking.stepdefination.nm.nb_homefinance_emicalc_manual_step_defs",)
+
+# API/stepdefination/conftest.py
+pytest_plugins = ("API.stepdefination.nm.api_my_feature_step_defs",)
+
+# CrossChannel — register both modules for shared step text</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§6.2 Generators — user story → manual → BDD</h2>
+        <table>
+          <tr><th>Utility</th><th>Module</th><th>Input</th><th>Output</th></tr>
+          <tr><td>User story → manual TC</td><td><code>common.utils.user_story_to_manual</code></td><td><code>UserStories/en/*.md</code></td><td><code>ManualTestCases/en/*.md</code></td></tr>
+          <tr><td>Manual TC → BDD</td><td><code>common.utils.manual_tc_to_bdd</code></td><td>Manual markdown</td><td><code>.feature</code>, <code>*_page.py</code>, <code>test_*_steps.py</code></td></tr>
+        </table>
+        <p style="margin-top:0.65rem"><strong>manual_tc_to_bdd</strong> writes under the chosen channel: Netbanking, MobileBanking, API, or CrossChannel.</p>
+        <pre class="code">cd framework
+python -m common.utils.manual_tc_to_bdd -i ManualTestCases/en/example.md -c Netbanking -p NB_example_feature --tag web
+
+python -m common.utils.user_story_to_manual -i UserStories/en/story.md -o ManualTestCases/en/out_manual.md</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§6.3 Web — DOM materialization (<code>bdd_dom_materialize</code>)</h2>
+        <ol class="detailed">
+          <li>Opens real URLs in Selenium; <code>dom_self_heal.suggest_locator_from_dom</code> proposes locators → <code>pageobject/nm/&lt;stem&gt;_dom_materialized.json</code>.</li>
+          <li>Patches <code>test_*_steps.py</code> so steps call <code>bdd_step_runner.execute_materialized_step(ui_driver, step_text, _FW, channel, stem)</code>.</li>
+          <li>Runner loads JSON, applies <strong>navigation</strong> heuristics (base / secondary URL), then <strong>click / assert</strong> from stored selectors.</li>
+        </ol>
+        <table>
+          <tr><th>Flag</th><th>Meaning</th></tr>
+          <tr><td><code>--headed</code></td><td>Browser headed during scan</td></tr>
+          <tr><td><code>--min-score</code></td><td>DOM match threshold</td></tr>
+          <tr><td><code>--patch-only</code></td><td>Skip browser; rewrite JSON + patch steps only</td></tr>
+        </table>
+        <pre class="code">python -m common.utils.bdd_dom_materialize -c Netbanking -p nb_homefinance_emicalc_manual ^
+  --base-url https://example.com/ --secondary-url https://example.com/subpage</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§6.4 API — contract materialization (<code>api_bdd_materialize</code>)</h2>
+        <ol class="detailed">
+          <li>Writes <code>pageobject/nm/&lt;stem&gt;_api_materialized.json</code> — <code>api_base_url</code>, <code>endpoints</code>, <code>payloads</code>, <code>default_headers</code> (<code>\${API_TOKEN}</code>-style env at runtime).</li>
+          <li>Patches steps → <code>api_bdd_step_runner.execute_api_materialized_step(api_client, step_text, _FW, channel, stem)</code>.</li>
+          <li>Maps acceptance phrases to POST/GET and assertions (2xx/4xx, HTTPS, etc.).</li>
+        </ol>
+        <pre class="code">python -m common.utils.api_bdd_materialize -c API -p api_my_feature --api-base-url https://api.example.com
+python -m common.utils.api_bdd_materialize -c API -p api_my_feature --api-base-url https://... --config overrides.json</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner">
+        <h2>§6.5 Cross-channel scenarios</h2>
+        <ul>
+          <li>Features under <code>CrossChannel/Features/nm/</code>.</li>
+          <li><strong>Steps not duplicated</strong> — <code>CrossChannel/conftest.py</code> loads Netbanking + API <code>_step_defs</code> via <code>pytest_plugins</code>.</li>
+          <li>Run with <code>--platform cross</code> so <code>ui_driver</code> and <code>api_client</code> are both active.</li>
+          <li>Example: web EMI flow + API lead steps in one scenario.</li>
+        </ul>
+      </div>` },
+    { html: `
+      <div class="slide-inner">
+        <h2>§6.6 Self-heal &amp; locator persistence</h2>
+        <ul>
+          <li><strong>dom_self_heal</strong> — suggests locators from visible DOM (materializer + optional runtime healing).</li>
+          <li><strong>locator_persistence</strong> — <code>pytest_sessionfinish</code> can log when healed locators were written to disk; <code>self_heal</code> marker in <code>pytest.ini</code>.</li>
+        </ul>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§6.7 Allure reporting (session-scoped)</h2>
+        <p class="subtitle"><code>conftest.py</code> calls <code>allure_session.build_session_paths</code> → per-run folder:</p>
+        <pre class="code">common/reports/sessions/&lt;session_id&gt;_&lt;YYYYMMDD_HHMMSS&gt;/
+  allure-results/    # config.option.allure_report_dir points here</pre>
+        <p style="margin-top:0.65rem"><strong>export_allure_artifacts</strong> can: run <code>allure generate</code> (needs CLI) → <code>allure-html/index.html</code>; emit <code>allure_summary.xlsx</code>, <code>allure_summary.pdf</code>; write <code>report_hub.html</code> with links to HTML, PDF, Excel, <code>media/</code>.</p>
+        <p style="margin-top:0.5rem"><strong>Capture:</strong> screenshots on failure (or always if <code>ALLURE_SCREENSHOT_ALWAYS=1</code>); Playwright video when <code>ALLURE_RECORD_VIDEO=1</code>. Latest pointer: <code>common/reports/sessions/LATEST_SESSION.txt</code>.</p>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§6.8 Unified runner (<code>runner.py</code>)</h2>
+        <ul>
+          <li>Invokes pytest with <code>--platform</code>, <code>--browser</code>, <code>--web-engine</code>, optional <code>-m</code> from <code>--tags</code>.</li>
+          <li>Optional: <code>--quality-check</code> (before tests), <code>--build-allure</code>, <code>--open-allure</code>, <code>--build-rtm</code>.</li>
+          <li>Platform from tags if omitted: <code>@mobile</code> → mobile, <code>@api</code> → api, <code>@cross</code> → cross, <code>@web</code> → web; else <strong>web</strong>.</li>
+        </ul>
+        <pre class="code">cd framework
+
+python runner.py
+python runner.py --platform web|mobile|api|cross
+python runner.py --platform web --browser firefox --web-engine playwright
+python runner.py --tags "@smoke"
+python runner.py --tags "@web and @smoke"
+python runner.py --tests-path Netbanking/stepdefination/nm/test_nb_homefinance_emicalc_manual_steps.py
+
+python runner.py --quality-check
+python runner.py --build-allure
+python runner.py --build-allure --open-allure
+python runner.py --build-rtm</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§6.9 Other utilities (reference)</h2>
+        <table>
+          <tr><th>Module</th><th>Role</th></tr>
+          <tr><td><code>common.utils.jira_zephyr_rtm</code></td><td>RTM / Zephyr (<code>--build-rtm</code>)</td></tr>
+          <tr><td><code>common.utils.quality_guard</code></td><td>Quality checks (<code>--quality-check</code>)</td></tr>
+          <tr><td><code>common.utils.logger</code></td><td>Logging to <code>common/logs/</code></td></tr>
+          <tr><td><code>common.utils.gcp_utils</code></td><td>GCP helpers (pipelines)</td></tr>
+          <tr><td><code>common.steps.auth_steps</code></td><td>Shared auth steps (<code>pytest_plugins</code> in root conftest)</td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§7.2 Pytest (direct)</h2>
+        <p class="subtitle">Supports <code>--base-url</code> and <code>--api-base-url</code> — <strong>not passed by runner.py today</strong>; use for real SUT URLs.</p>
+        <pre class="code">cd framework
+
+python -m pytest
+python -m pytest -m "smoke and web"
+python -m pytest Netbanking/stepdefination/nm/test_nb_homefinance_emicalc_manual_steps.py \\
+  --platform web --base-url https://your-web-app/
+python -m pytest API/stepdefination/nm/test_api_my_feature_steps.py \\
+  --platform api --api-base-url https://your-api/
+python -m pytest CrossChannel/stepdefination/nm/test_CC_authentication_cross_login_steps.py \\
+  --platform cross --base-url https://your-web/ --api-base-url https://your-api/</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§7.3 Generators — command reference</h2>
+        <pre class="code">cd framework
+
+python -m common.utils.user_story_to_manual -i UserStories/en/story.md -o ManualTestCases/en/out_manual.md
+
+python -m common.utils.manual_tc_to_bdd -i ManualTestCases/en/foo.md -c Netbanking -p NB_feature --tag web
+
+python -m common.utils.bdd_dom_materialize -c Netbanking -p &lt;stem&gt; --base-url https://... [--secondary-url ...]
+
+python -m common.utils.api_bdd_materialize -c API -p &lt;stem&gt; --api-base-url https://... [--config path.json]</pre>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§7.4 Allure export (programmatic)</h2>
+        <pre class="code">cd framework
+python -c "from pathlib import Path; from common.reporting.allure_export import export_allure_artifacts; export_allure_artifacts(Path('common/reports'))"</pre>
+        <p style="margin-top:0.65rem">Also: <code>python runner.py --build-allure [--open-allure]</code> after a test run.</p>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§8 Test discovery (<code>pytest.ini</code>)</h2>
+        <p><code>testpaths</code> includes all four channel <strong>stepdefination</strong> trees — full collection can be heavy. Narrow with <strong>file path</strong> or <code>-m</code> markers.</p>
+        <p style="margin-top:0.65rem"><strong>Registered markers</strong> include: <span class="tag">web</span> <span class="tag">mobile</span> <span class="tag">api</span> <span class="tag">cross</span> <span class="tag">smoke</span> <span class="tag">regression</span> <span class="tag">generated</span> <span class="tag">self_heal</span></p>
+      </div>` },
+    { html: `
+      <div class="slide-inner">
+        <h2>§9 CI/CD notes</h2>
+        <ul>
+          <li>Set <code>PLATFORM</code>, <code>TAGS</code>, <code>BROWSER</code>, <code>WEB_ENGINE</code> to match <code>runner.py</code>.</li>
+          <li>Install Python deps; optionally <strong>Allure CLI</strong> on the agent for HTML reports.</li>
+          <li>Expose secrets (<code>API_TOKEN</code>, etc.) via CI variables — not committed JSON.</li>
+          <li>Archive <code>common/reports/sessions/</code> or copy <code>LATEST_SESSION</code> contents as artifacts.</li>
+        </ul>
+      </div>` },
+    { html: `
+      <div class="slide-inner compact">
+        <h2>§10 Troubleshooting</h2>
+        <table>
+          <tr><th>Symptom</th><th>Likely cause</th><th>Action</th></tr>
+          <tr><td>StepDefinitionNotFoundError</td><td>Step module not in pytest_plugins</td><td>Ensure channel <code>stepdefination/conftest.py</code> lists <code>*_step_defs</code></td></tr>
+          <tr><td>No Allure HTML</td><td><code>allure</code> CLI missing</td><td>Install Allure commandline; PDF/xlsx may still work</td></tr>
+          <tr><td>API skips / wrong client</td><td>Wrong --platform</td><td>Use <code>--platform api</code> or <code>cross</code></td></tr>
+          <tr><td>DNS / connection errors</td><td>Placeholder URLs</td><td>Point <code>--api-base-url</code> / materialized JSON to real hosts</td></tr>
+          <tr><td>Unicode errors in PDF export</td><td>Non-ASCII in summaries</td><td>Export uses ASCII-safe paths for PDF table cells</td></tr>
+        </table>
+      </div>` },
+    { html: `
+      <div class="slide-inner">
+        <h2>§11 Related documents &amp; closing</h2>
+        <ul>
+          <li><strong>docs/TECHNICAL.md</strong> — authoritative reference (behavior details in <code>framework/common/</code> and channel folders).</li>
+          <li><strong>framework/README.md</strong> — concise operational commands.</li>
+          <li><strong>qe-auto/README.md</strong> — repo entry.</li>
+          <li><strong>docs/presentations/</strong> — this HTML deck; regenerate PPTX via <code>docs/presentations/build_pptx_from_technical.py</code> if present.</li>
+        </ul>
+        <p class="doc-foot">Document version: aligned with TECHNICAL.md structure. Thank you — qe-auto.</p>
+      </div>` },
+  ];
+
+  let idx = 0;
+  const viewport = document.getElementById("viewport");
+  const progress = document.getElementById("progress");
+  const curEl = document.getElementById("cur");
+  const totalEl = document.getElementById("total");
+
+  function render() {
+    viewport.innerHTML = "";
+    slides.forEach((s, i) => {
+      const div = document.createElement("div");
+      div.className = "slide" + (i === idx ? " active" : "");
+      div.innerHTML = s.html;
+      viewport.appendChild(div);
+    });
+    const pct = ((idx + 1) / slides.length) * 100;
+    progress.style.width = pct + "%";
+    curEl.textContent = idx + 1;
+    totalEl.textContent = slides.length;
+  }
+
+  function go(n) {
+    idx = Math.max(0, Math.min(slides.length - 1, n));
+    render();
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); go(idx + 1); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(idx - 1); }
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(slides.length - 1);
+    else if (e.key === "f" || e.key === "F") {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+  });
+
+  totalEl.textContent = slides.length;
+  render();
+  </script>
+</body>
+</html>
